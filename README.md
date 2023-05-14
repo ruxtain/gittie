@@ -1,25 +1,37 @@
 # gittie
 
-## server
-receive files uploaded by the client
+## The server
+Receive files uploaded by the client
 
-## client
-scan changed files and upload them to the server
+## The client
+Scan changed files and upload them to the server
 
-## how to use?
+## How to use?
 
-1. write your host, port, and url path in config.json:
+1. Write your host, port, and url path in config.json:
 
 ```json
 {
 	"url": "http://127.0.0.1:6061",
-	"path": "/push"
+	"path": "/push",
+	"ignores": [
+		".DS_Store", 
+		"env/",
+		"/path/to/project/some_path"
+	]
 }
 ```
 
-2. put the code on your server and your local machine.
+The `ignores` in `config.json` only supports 3 kinds of elements currently.
+1) relative file path
+2) relative directory path with a trailing slash
+3) absolute file or directory
 
-3. run client:
+The special `.git` and `.gittie` are ignored by default.
+
+2. Put the code on your server and your local machine.
+
+3. Run client:
 
 ```shell
 # run status to check what have changed

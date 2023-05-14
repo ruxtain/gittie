@@ -7,6 +7,7 @@ import sys
 import json
 import urllib
 import requests
+from pprint import pprint
 
 
 class Config:
@@ -41,28 +42,39 @@ class Client:
 			self.root = os.path.abspath(root)
 			self.gittie = os.path.abspath(os.path.join(root, '.gittie'))
 			self.modifications = {}
+			with open('config.json') as f:
+				self.config = Config(json.loads(f.read()))
 		else:
 			raise FileNotFoundError(f'{root} is not a directory')
 
-	@property
-	def config(self):
-		with open('config.json') as f:
-			return Config(json.loads(f.read()))
+	def is_ignore(self, file):
+		for ignore in self.config.ignores:
+			if file.type == 'dir':
+				if ignore in file or '.git/' in file:
+					return True
+			elif file.type == 'file':
+				if ('/' + file).endswith(ignore) or '.gitte' in file:
+					return True
+		return False
 
 	@property
 	def files(self):
-		for i, ds, fs in os.walk(self.root):
-			for f in fs:
-				file = os.path.join(i, f)
-				if os.path.abspath(file) == self.gittie: # 跳过特殊文件
-					pass
-				elif os.path.basename(file) in self.config.ignore:
-					pass
-				else:
-					yield File(file, 'file')
+		for i, ds, fs in os.walk(self.root, topdown=True):
 			for d in ds:
-				dire = os.path.join(i, d)
-				yield File(dire, 'dir') # 不仅文件，目录也要返回
+				dire = os.path.abspath(os.path.join(i, d)) 
+				dire = File(dire + '/', 'dir') # 为了明显区分目录和文件，目录的结尾加斜杠
+				if self.is_ignore(dire):
+					ds.remove(d) # 必须直接删除要跳过的目录，否则在更深一层的递归中还是会访问里面的子目录
+					break        # 里面的文件也无需访问了
+				else:
+					for f in fs:
+						file = os.path.abspath(os.path.join(i, f))
+						file = File(file, 'file')
+						if not self.is_ignore(file):
+							yield file				
+				yield dire
+
+
 
 	def reset(self):
 		# 删除掉.gittie文件，从而使得所有文件视为心中，于是会同步所有文件
@@ -127,17 +139,20 @@ class Client:
 
 
 def main():
-	local_root, remote_root, cmd = sys.argv[1:]
-	client = Client(local_root)
-	if cmd == 'reset':
-		client.reset()
-	elif cmd == 'status':
-		print(client.status())
-	elif cmd == 'push':
-		client.push(remote_root)
-	elif cmd == 'update':   # push后自动执行，几乎不需要手动执行
-		client.update()
+	args = sys.argv[1:]
+	if len(args) == 0:
+		print('usage: python client.py local_root remote_root [reset|status|push|update]')
+	elif len(args) == 3:
+		local_root, remote_root, cmd = sys.argv[1:]
+		client = Client(local_root)
+		if cmd == 'reset':
+			client.reset()
+		elif cmd == 'status':
+			pprint(client.status())
+		elif cmd == 'push':
+			client.push(remote_root)
+		elif cmd == 'update':   # push后自动执行，几乎不需要手动执行
+			client.update()
 	
-
 if __name__ == '__main__':
 	main()

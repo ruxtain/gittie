@@ -11,28 +11,28 @@ app = Flask(__name__)
 def push():
 
     if request.method == 'POST':
-    	files = request.files
-    	local_root = request.form['local_root']
-    	remote_root = request.form['remote_root']
-    	modifications = json.loads(request.form['modifications'])
+        files = request.files
+        local_root = request.form['local_root']
+        remote_root = request.form['remote_root']
+        modifications = json.loads(request.form['modifications'])
 
-    	print('modifications:', modifications)
+        print('modifications:', modifications)
 
-    	for file, modification in modifications.items():
+        for file, modification in modifications.items():
 
-    		path = file.replace(local_root, remote_root)
+            path = file.replace(local_root, remote_root)
 
-    		if modification in ('add_file', 'modify_file'):
-    			os.makedirs(os.path.dirname(path), exist_ok=True)
-    			files[file].save(path)
-    		elif modification == 'remove_file':
-    			os.remove(path)
-    		elif modification in ('add_dir'):
-    			os.makedirs(path, exist_ok=True)
-    		elif modification in ('remove_dir'):
-    			os.removedirs(path)
+            if modification in ('add_file', 'modify_file'):
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                files[file].save(path)
+            elif modification == 'remove_file':
+                os.remove(path)
+            elif modification in ('add_dir'):
+                os.makedirs(path, exist_ok=True)
+            elif modification in ('remove_dir'):
+                os.removedirs(path)
 
-    	return 'the push is successful'
+        return 'the push is successful'
         #f = request.files['file']
         #root = request.form['root'] # 对应 client.py 传入的 root
         # path = os.path.join("/home/cdodev/tancheng/jars", f.filename)
